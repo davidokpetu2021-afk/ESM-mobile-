@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ESM - Standings</title>
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+  <!-- PAGE TITLE -->
+  <header>
+    <h1>League Standings</h1>
+    <p>Auto-updated team rankings based on match results</p>
+  </header>
+
+
+  <!-- STANDINGS TABLE -->
+  <section>
+
+    <div id="standingsContainer"></div>
+
+  </section>
+
+
+  <!-- SCRIPTS -->
+  <script src="db.js"></script>
+  <script src="app.js"></script>
+
+
+  <!-- STANDINGS LOGIC -->
+  <script>
+
+    // -----------------------------
+    // CALCULATE STANDINGS
+    // -----------------------------
+    async function calculateStandings() {
+
+      const teams = await getAllRecords("teams");
+      const matches = await getAllRecords("matches");
+
+      let table = {};
+
+      // Initialize teams
+      teams.forEach(t => {
+
+        table[t.id] = {
+          teamId: t.id,
+          name: t.name,
+          played: 0,
+          wins: 0,
+          draws: 0,
+          losses: 0,
+          points: 0
+        };
+
+      });
+
+
+      // Process matches
+      matches.forEach(m => {
+
+        const A = table[m.teamA];
+        const B = table[m.teamB];
+
+        if (!A || !B) return;
+
+        A.played++;
+        B.played++;
+
+        if (m.scoreA > m.scoreB) {
+
+          A.wins++;
+          A.points += 3;
+
+          B.losses++;
+
+        } else if (m.scoreB > m.scoreA) {
+
+          B.wins++;
+          B.points += 3;
+
+          A.losses++;
+
+        } else {
+
+          A.draws++;
+          B.draws++;
+
+          A.points += 1;
+          B.points += 1;
+
+        }
+
+      });
+
+
+      return Object.values(table).sort((a, b) => b.points - a.points);
+
+    }
+
+
+    // -----------------------------
+    // RENDER TABLE
+    // -----------------------------
+    async function loadStandingsUI() {
+
+      const container = document.getElementById("standingsContainer");
+
+      container.innerHTML = "";
+
+      const data = await calculateStandings();
+
+      const table = document.createElement("table");
+
+      table.innerHTML = `
+
+        <tr>
+          <th>Team</th>
+          <th>P</th>
+          <th>W</th>
+          <th>D</th>
+          <th>L</th>
+          <th>Pts</th>
+        </tr>
+
+      `;
+
+      data.forEach(t => {
+
+        const row = document.createElement("tr");
+
+        row.innerHTML = `
+
+          <td>${t.name}</td>
+          <td>${t.played}</td>
+          <td>${t.wins}</td>
+          <td>${t.draws}</td>
+          <td>${t.losses}</td>
+          <td>${t.points}</td>
+
+        `;
+
+        table.appendChild(row);
+
+      });
+
+      container.appendChild(table);
+
+    }
+
+
+    // -----------------------------
+    // INIT
+    // -----------------------------
+    document.addEventListener("DOMContentLoaded", async () => {
+
+      await initDB();
+
+      loadStandingsUI();
+
+    });
+
+  </script>
+
+</body>
+
+</html>
