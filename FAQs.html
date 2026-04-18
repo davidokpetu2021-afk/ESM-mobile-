@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ESM - FAQs</title>
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+  <!-- PAGE TITLE -->
+  <header>
+    <h1>FAQs</h1>
+    <p>Help and support section</p>
+  </header>
+
+
+  <!-- FAQ LIST (PUBLIC VIEW) -->
+  <section>
+
+    <h2>Frequently Asked Questions</h2>
+
+    <div id="faqContainer"></div>
+
+  </section>
+
+
+  <!-- ADMIN PANEL (HIDDEN) -->
+  <section id="adminPanel" style="display:none;">
+
+    <h2>Admin FAQ Control</h2>
+
+    <input type="text" id="faqQuestion" placeholder="Question">
+    <textarea id="faqAnswer" placeholder="Answer"></textarea>
+
+    <button onclick="addFAQ()">Add FAQ</button>
+
+  </section>
+
+
+  <!-- ADMIN ACCESS BUTTON -->
+  <button onclick="openAdminLogin()">Admin Access</button>
+
+
+  <!-- LOGIN MODAL (SIMPLE PROMPT STYLE) -->
+  <script>
+
+    const ADMIN_PASSWORD = "ESM6002";
+
+
+    function openAdminLogin() {
+
+      const pass = prompt("Enter Admin Password:");
+
+      if (pass === ADMIN_PASSWORD) {
+
+        document.getElementById("adminPanel").style.display = "block";
+
+        alert("Admin Mode Activated");
+
+      } else {
+
+        alert("Access Denied");
+
+      }
+
+    }
+
+  </script>
+
+
+  <!-- SCRIPTS -->
+  <script src="db.js"></script>
+  <script src="app.js"></script>
+
+
+  <!-- FAQ LOGIC -->
+  <script>
+
+    // -----------------------------
+    // ADD FAQ (ADMIN ONLY)
+    // -----------------------------
+    async function addFAQ() {
+
+      const question = document.getElementById("faqQuestion").value;
+      const answer = document.getElementById("faqAnswer").value;
+
+      if (!question || !answer) return;
+
+      const faq = {
+        id: Date.now().toString(),
+        question,
+        answer,
+        createdAt: new Date().toISOString()
+      };
+
+      await addRecord("faqs", faq);
+
+      loadFAQsUI();
+
+    }
+
+
+    // -----------------------------
+    // LOAD FAQS (PUBLIC)
+    // -----------------------------
+    async function loadFAQsUI() {
+
+      const container = document.getElementById("faqContainer");
+
+      container.innerHTML = "";
+
+      const faqs = await getAllRecords("faqs");
+
+      faqs.forEach(f => {
+
+        const div = document.createElement("div");
+
+        div.innerHTML = `
+
+          <h3>${f.question}</h3>
+          <p>${f.answer}</p>
+
+        `;
+
+        container.appendChild(div);
+
+      });
+
+    }
+
+
+    // -----------------------------
+    // INIT
+    // -----------------------------
+    document.addEventListener("DOMContentLoaded", async () => {
+
+      await initDB();
+
+      loadFAQsUI();
+
+    });
+
+  </script>
+
+</body>
+
+  </html>
