@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ESM - Tournaments</title>
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+  <header>
+    <h2>Tournaments</h2>
+  </header>
+
+  <!-- CREATE TOURNAMENT -->
+  <section id="createTournamentSection">
+
+    <h3>Create Tournament</h3>
+
+    <input type="text" id="tournamentName" placeholder="Tournament Name">
+
+    <select id="tournamentType">
+      <option value="league">League</option>
+      <option value="knockout">Knockout</option>
+      <option value="group_knockout">Group + Knockout</option>
+    </select>
+
+    <input type="file" id="tournamentLogo">
+
+    <button onclick="createTournament()">Create Tournament</button>
+
+  </section>
+
+
+  <!-- TOURNAMENT LIST -->
+  <section id="tournamentList">
+
+    <h3>All Tournaments</h3>
+
+    <div id="tournamentsContainer"></div>
+
+  </section>
+
+
+  <!-- SCRIPTS -->
+  <script src="db.js"></script>
+  <script src="admin-utils.js"></script>
+  <script src="app.js"></script>
+
+
+  <!-- TOURNAMENT LOGIC (MERGED) -->
+  <script>
+
+    // -----------------------------
+    // CREATE TOURNAMENT
+    // -----------------------------
+    async function createTournament() {
+
+      const name = document.getElementById("tournamentName").value;
+      const type = document.getElementById("tournamentType").value;
+      const logoInput = document.getElementById("tournamentLogo");
+
+      if (!name) {
+        alert("Tournament name required");
+        return;
+      }
+
+      let logo = null;
+
+      if (logoInput.files.length > 0) {
+        logo = await fileToBase64(logoInput.files[0]);
+      }
+
+      const tournament = {
+        id: Date.now().toString(),
+        name,
+        type,
+        logo,
+        createdAt: new Date().toISOString()
+      };
+
+      await addRecord("tournaments", tournament);
+
+      clearForm();
+      loadTournamentsUI();
+
+      alert("Tournament Created");
+
+    }
+
+
+    // -----------------------------
+    // CONVERT FILE TO BASE64
+    // -----------------------------
+    function fileToBase64(file) {
+
+      return new Promise((resolve, reject) => {
+
+        const reader = new FileReader();
+
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+
+        reader.readAsDataURL(file);
+
+      });
+
+    }
+
+
+    // -----------------------------
+    // LOAD TOURNAMENTS
+    // -----------------------------
+    async function loadTournamentsUI() {
+
+      const container = document.getElementById("tournamentsContainer");
+
+      container.innerHTML = "";
+
+      const tournaments = await getAllRecords("tournaments");
+
+      tournaments.forEach(t => {
+
+        const card = document.createElement("div");
+        card.className = "tournament-card";
+
+        card.innerHTML = `
+
+          <div class="card-header">
+            ${t.logo ? `<img src="${t.logo}" width="50">` : ""}
+            <h4>${t.name}</h4>
+          </div>
+
+          <p>Type: ${t.type}</p>
+          <p>Created: ${new Date(t.createdAt).toLocaleString()}</p>
+
+          <button onclick="deleteTournament('${t.id}')">Delete</button>
+
+        `;
+
+        container.appendChild(card);
+
+      });
+
+    }
+
+
+    // -----------------------------
+    // DELETE TOURNAMENT
+    // -----------------------------
+    async function deleteTournament(id) {
+
+      if (!confirm("Delete this tournament?")) return;
+
+      await deleteRecord("tournaments", id);
+
+      loadTournamentsUI();
+
+    }
+
+
+    // -----------------------------
+    // CLEAR FORM
+    // -----------------------------
+    function clearForm() {
+
+      document.getElementById("tournamentName").value = "";
+      document.getElementById("tournamentLogo").value = "";
+
+    }
+
+
+    // -----------------------------
+    // INITIAL LOAD
+    // -----------------------------
+    document.addEventListener("DOMContentLoaded", async () => {
+
+      await initDB();
+      loadTournamentsUI();
+
+    });
+
+  </script>
+
+</body>
+
+    </html>
