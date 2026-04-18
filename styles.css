@@ -1,0 +1,45 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px;
+}
+
+body {
+    background-color: #121212; /* Dark background */
+    color: #e0e0e0; /* Light text */
+    font-family: 'Arial', sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: #76ff03; /* Green accent */
+}
+
+button {
+    background-color: #1b5e20; /* Dark green background */
+    color: #ffffff;
+    border: none;
+    border-radius: 4px;
+    padding: 12px 24px;
+    margin: 8px 0;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #4caf50; /* Lighter green on hover */
+}
+
+/* Responsive design */
+@media (min-width: 320px) {
+    .container {
+        width: 90%;
+    }
+}
+
+/* Touch-friendly spacing */
+button {
+    margin: 10px;
+    padding: 16px 32px;
+}
