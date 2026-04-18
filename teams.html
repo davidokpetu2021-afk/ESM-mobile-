@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ESM - Teams</title>
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+  <header>
+    <h2>Teams</h2>
+  </header>
+
+  <!-- CREATE TEAM -->
+  <section id="createTeamSection">
+
+    <h3>Create Team</h3>
+
+    <input type="text" id="teamName" placeholder="Team Name">
+
+    <input type="file" id="teamLogo">
+
+    <!-- Tournament selector (IMPORTANT: teams belong to tournaments) -->
+    <select id="teamTournament"></select>
+
+    <button onclick="createTeam()">Create Team</button>
+
+  </section>
+
+
+  <!-- TEAM LIST -->
+  <section id="teamList">
+
+    <h3>Teams</h3>
+
+    <div id="teamsContainer"></div>
+
+  </section>
+
+
+  <!-- SCRIPTS -->
+  <script src="db.js"></script>
+  <script src="app.js"></script>
+
+
+  <!-- TEAM LOGIC -->
+  <script>
+
+    // -----------------------------
+    // LOAD TOURNAMENTS INTO DROPDOWN
+    // -----------------------------
+    async function loadTournamentOptions() {
+
+      const select = document.getElementById("teamTournament");
+
+      select.innerHTML = "";
+
+      const tournaments = await getAllRecords("tournaments");
+
+      tournaments.forEach(t => {
+
+        const option = document.createElement("option");
+
+        option.value = t.id;
+        option.textContent = t.name;
+
+        select.appendChild(option);
+
+      });
+
+    }
+
+
+    // -----------------------------
+    // CREATE TEAM
+    // -----------------------------
+    async function createTeam() {
+
+      const name = document.getElementById("teamName").value;
+      const tournamentId = document.getElementById("teamTournament").value;
+      const logoInput = document.getElementById("teamLogo");
+
+      if (!name || !tournamentId) {
+        alert("Team name and tournament required");
+        return;
+      }
+
+      let logo = null;
+
+      if (logoInput.files.length > 0) {
+        logo = await fileToBase64(logoInput.files[0]);
+      }
+
+      const team = {
+        id: Date.now().toString(),
+        name,
+        tournamentId,
+        logo,
+        createdAt: new Date().toISOString()
+      };
+
+      await addRecord("teams", team);
+
+      clearTeamForm();
+      loadTeamsUI();
+
+      alert("Team Created");
+
+    }
+
+
+    // -----------------------------
+    // LOAD TEAMS
+    // -----------------------------
+    async function loadTeamsUI() {
+
+      const container = document.getElementById("teamsContainer");
+
+      container.innerHTML = "";
+
+      const teams = await getAllRecords("teams");
+
+      teams.forEach(t => {
+
+        const card = document.createElement("div");
+        card.className = "team-card";
+
+        card.innerHTML = `
+
+          <div class="card-header">
+            ${t.logo ? `<img src="${t.logo}" width="50">` : ""}
+            <h4>${t.name}</h4>
+          </div>
+
+          <p>Tournament ID: ${t.tournamentId}</p>
+
+          <button onclick="deleteTeam('${t.id}')">Delete</button>
+
+        `;
+
+        container.appendChild(card);
+
+      });
+
+    }
+
+
+    // -----------------------------
+    // DELETE TEAM
+    // -----------------------------
+    async function deleteTeam(id) {
+
+      if (!confirm("Delete this team?")) return;
+
+      await deleteRecord("teams", id);
+
+      loadTeamsUI();
+
+    }
+
+
+    // -----------------------------
+    // FILE TO BASE64 (LOCAL HELPER)
+    // -----------------------------
+    function fileToBase64(file) {
+
+      return new Promise((resolve, reject) => {
+
+        const reader = new FileReader();
+
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = err => reject(err);
+
+        reader.readAsDataURL(file);
+
+      });
+
+    }
+
+
+    // -----------------------------
+    // CLEAR FORM
+    // -----------------------------
+    function clearTeamForm() {
+
+      document.getElementById("teamName").value = "";
+      document.getElementById("teamLogo").value = "";
+
+    }
+
+
+    // -----------------------------
+    // INITIAL LOAD
+    // -----------------------------
+    document.addEventListener("DOMContentLoaded", async () => {
+
+      await initDB();
+
+      await loadTournamentOptions();
+
+      loadTeamsUI();
+
+    });
+
+  </script>
+
+</body>
+
+  </html>
