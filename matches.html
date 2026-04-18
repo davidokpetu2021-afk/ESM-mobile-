@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ESM - Matches</title>
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+  <!-- PAGE TITLE (ADDED AS REQUESTED) -->
+  <header>
+    <h1>Match Center</h1>
+    <p>Create, manage, and update match results</p>
+  </header>
+
+
+  <!-- CREATE MATCH -->
+  <section id="createMatchSection">
+
+    <h3>Create Match</h3>
+
+    <select id="teamA"></select>
+    <select id="teamB"></select>
+
+    <button onclick="createMatch()">Create Match</button>
+
+  </section>
+
+
+  <!-- MATCH LIST -->
+  <section id="matchList">
+
+    <h3>All Matches</h3>
+
+    <div id="matchesContainer"></div>
+
+  </section>
+
+
+  <!-- SCRIPTS -->
+  <script src="db.js"></script>
+  <script src="app.js"></script>
+
+
+  <!-- MATCH LOGIC -->
+  <script>
+
+    // -----------------------------
+    // LOAD TEAMS INTO DROPDOWNS
+    // -----------------------------
+    async function loadTeamsForMatch() {
+
+      const teams = await getAllRecords("teams");
+
+      const teamA = document.getElementById("teamA");
+      const teamB = document.getElementById("teamB");
+
+      teamA.innerHTML = "";
+      teamB.innerHTML = "";
+
+      teams.forEach(t => {
+
+        const optionA = document.createElement("option");
+        optionA.value = t.id;
+        optionA.textContent = t.name;
+
+        const optionB = document.createElement("option");
+        optionB.value = t.id;
+        optionB.textContent = t.name;
+
+        teamA.appendChild(optionA);
+        teamB.appendChild(optionB);
+
+      });
+
+    }
+
+
+    // -----------------------------
+    // CREATE MATCH
+    // -----------------------------
+    async function createMatch() {
+
+      const teamA = document.getElementById("teamA").value;
+      const teamB = document.getElementById("teamB").value;
+
+      if (teamA === teamB) {
+        alert("Teams must be different");
+        return;
+      }
+
+      const match = {
+        id: Date.now().toString(),
+        teamA,
+        teamB,
+
+        scoreA: 0,
+        scoreB: 0,
+
+        status: "pending",
+
+        events: [],
+
+        createdAt: new Date().toISOString()
+      };
+
+      await addRecord("matches", match);
+
+      loadMatchesUI();
+
+      alert("Match Created");
+
+    }
+
+
+    // -----------------------------
+    // LOAD MATCHES
+    // -----------------------------
+    async function loadMatchesUI() {
+
+      const container = document.getElementById("matchesContainer");
+
+      container.innerHTML = "";
+
+      const matches = await getAllRecords("matches");
+
+      const teams = await getAllRecords("teams");
+
+      function getTeamName(id) {
+        const t = teams.find(x => x.id === id);
+        return t ? t.name : "Unknown";
+      }
+
+      matches.forEach(m => {
+
+        const card = document.createElement("div");
+        card.className = "match-card";
+
+        card.innerHTML = `
+
+          <h4>${getTeamName(m.teamA)} vs ${getTeamName(m.teamB)}</h4>
+
+          <p>Score: ${m.scoreA} - ${m.scoreB}</p>
+
+          <button onclick="goal('${m.id}','A')">Goal A</button>
+          <button onclick="goal('${m.id}','B')">Goal B</button>
+
+          <button onclick="deleteMatch('${m.id}')">Delete</button>
+
+        `;
+
+        container.appendChild(card);
+
+      });
+
+    }
+
+
+    // -----------------------------
+    // ADD GOAL EVENT
+    // -----------------------------
+    async function goal(matchId, side) {
+
+      const matches = await getAllRecords("matches");
+
+      const match = matches.find(m => m.id === matchId);
+
+      if (!match) return;
+
+      if (side === "A") match.scoreA++;
+      if (side === "B") match.scoreB++;
+
+      match.events.push({
+        type: "goal",
+        side,
+        time: new Date().toISOString()
+      });
+
+      await updateRecord("matches", match);
+
+      loadMatchesUI();
+
+    }
+
+
+    // -----------------------------
+    // DELETE MATCH
+    // -----------------------------
+    async function deleteMatch(id) {
+
+      if (!confirm("Delete match?")) return;
+
+      await deleteRecord("matches", id);
+
+      loadMatchesUI();
+
+    }
+
+
+    // -----------------------------
+    // INIT
+    // -----------------------------
+    document.addEventListener("DOMContentLoaded", async () => {
+
+      await initDB();
+
+      await loadTeamsForMatch();
+
+      loadMatchesUI();
+
+    });
+
+  </script>
+
+</body>
+
+</html>
