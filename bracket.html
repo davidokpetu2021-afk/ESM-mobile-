@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ESM - Knockout Bracket</title>
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+  <!-- PAGE TITLE -->
+  <header>
+    <h1>Knockout Bracket</h1>
+    <p>Manage elimination rounds and tournament progression</p>
+  </header>
+
+
+  <!-- GENERATE BRACKET -->
+  <section>
+
+    <button onclick="generateBracket()">Generate Bracket</button>
+
+    <div id="bracketContainer"></div>
+
+  </section>
+
+
+  <!-- SCRIPTS -->
+  <script src="db.js"></script>
+  <script src="app.js"></script>
+
+
+  <!-- BRACKET LOGIC -->
+  <script>
+
+    let bracketData = [];
+
+
+    // -----------------------------
+    // GENERATE BRACKET
+    // -----------------------------
+    async function generateBracket() {
+
+      const teams = await getAllRecords("teams");
+
+      if (teams.length < 2) {
+        alert("Not enough teams");
+        return;
+      }
+
+      shuffleArray(teams);
+
+      bracketData = [];
+
+      for (let i = 0; i < teams.length; i += 2) {
+
+        if (!teams[i + 1]) break;
+
+        bracketData.push({
+          id: Date.now() + i,
+          teamA: teams[i],
+          teamB: teams[i + 1],
+          scoreA: 0,
+          scoreB: 0,
+          winner: null,
+          status: "pending",
+          penaltyA: 0,
+          penaltyB: 0,
+          disqualified: false
+        });
+
+      }
+
+      renderBracket();
+
+    }
+
+
+    // -----------------------------
+    // RENDER BRACKET
+    // -----------------------------
+    function renderBracket() {
+
+      const container = document.getElementById("bracketContainer");
+
+      container.innerHTML = "";
+
+      bracketData.forEach((m, index) => {
+
+        const div = document.createElement("div");
+
+        div.className = "bracket-match";
+
+        div.innerHTML = `
+
+          <h4>${m.teamA.name} vs ${m.teamB.name}</h4>
+
+          <p>${m.scoreA} - ${m.scoreB}</p>
+
+          <p>Penalties: ${m.penaltyA} - ${m.penaltyB}</p>
+
+          <button onclick="goal(${index}, 'A')">Goal A</button>
+          <button onclick="goal(${index}, 'B')">Goal B</button>
+
+          <button onclick="penalty(${index}, 'A')">Penalty A</button>
+          <button onclick="penalty(${index}, 'B')">Penalty B</button>
+
+          <button onclick="decideWinner(${index})">Decide Winner</button>
+
+          <button onclick="disqualify(${index})">Disqualify Match</button>
+
+        `;
+
+        container.appendChild(div);
+
+      });
+
+    }
+
+
+    // -----------------------------
+    // GOALS
+    // -----------------------------
+    function goal(i, side) {
+
+      if (side === "A") bracketData[i].scoreA++;
+      if (side === "B") bracketData[i].scoreB++;
+
+      renderBracket();
+
+    }
+
+
+    // -----------------------------
+    // PENALTIES
+    // -----------------------------
+    function penalty(i, side) {
+
+      if (side === "A") bracketData[i].penaltyA++;
+      if (side === "B") bracketData[i].penaltyB++;
+
+      renderBracket();
+
+    }
+
+
+    // -----------------------------
+    // DECIDE WINNER
+    // -----------------------------
+    function decideWinner(i) {
+
+      const m = bracketData[i];
+
+      if (m.scoreA > m.scoreB) {
+        m.winner = m.teamA.name;
+      } else if (m.scoreB > m.scoreA) {
+        m.winner = m.teamB.name;
+      } else {
+
+        // penalty fallback
+        if (m.penaltyA > m.penaltyB) m.winner = m.teamA.name;
+        else if (m.penaltyB > m.penaltyA) m.winner = m.teamB.name;
+        else m.winner = "Draw";
+
+      }
+
+      m.status = "completed";
+
+      renderBracket();
+
+    }
+
+
+    // -----------------------------
+    // DISQUALIFY MATCH
+    // -----------------------------
+    function disqualify(i) {
+
+      const reason = prompt("Disqualification reason:");
+
+      bracketData[i].disqualified = true;
+      bracketData[i].winner = reason || "Disqualified";
+
+      renderBracket();
+
+    }
+
+
+    // -----------------------------
+    // SHUFFLE TEAMS
+    // -----------------------------
+    function shuffleArray(array) {
+
+      for (let i = array.length - 1; i > 0; i--) {
+
+        const j = Math.floor(Math.random() * (i + 1));
+
+        [array[i], array[j]] = [array[j], array[i]];
+
+      }
+
+    }
+
+  </script>
+
+</body>
+
+</html>
