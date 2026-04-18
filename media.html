@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ESM - Media</title>
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+  <!-- PAGE TITLE -->
+  <header>
+    <h1>Media Center</h1>
+    <p>Announcements and tournament updates</p>
+  </header>
+
+
+  <!-- ANNOUNCEMENTS -->
+  <section>
+
+    <h2>Announcements</h2>
+
+    <input type="text" id="announcementText" placeholder="Write announcement">
+    <button onclick="addAnnouncement()">Post</button>
+
+    <div id="announcementContainer"></div>
+
+  </section>
+
+
+  <!-- POSTS -->
+  <section>
+
+    <h2>Web Posts</h2>
+
+    <input type="text" id="postTitle" placeholder="Post Title">
+    <textarea id="postContent" placeholder="Write content"></textarea>
+
+    <!-- URL-based media upload (as requested) -->
+    <input type="text" id="postImageUrl" placeholder="Image URL">
+
+    <button onclick="addPost()">Publish Post</button>
+
+    <div id="postContainer"></div>
+
+  </section>
+
+
+  <!-- SCRIPTS -->
+  <script src="db.js"></script>
+  <script src="app.js"></script>
+
+
+  <!-- MEDIA LOGIC -->
+  <script>
+
+    // -----------------------------
+    // ANNOUNCEMENTS
+    // -----------------------------
+    async function addAnnouncement() {
+
+      const text = document.getElementById("announcementText").value;
+
+      if (!text) return;
+
+      const announcement = {
+        id: Date.now().toString(),
+        text,
+        createdAt: new Date().toISOString()
+      };
+
+      await addRecord("media", {
+        type: "announcement",
+        ...announcement
+      });
+
+      loadMediaUI();
+
+    }
+
+
+    // -----------------------------
+    // POSTS
+    // -----------------------------
+    async function addPost() {
+
+      const title = document.getElementById("postTitle").value;
+      const content = document.getElementById("postContent").value;
+      const imageUrl = document.getElementById("postImageUrl").value;
+
+      if (!title || !content) return;
+
+      const post = {
+        id: Date.now().toString(),
+        title,
+        content,
+        imageUrl,
+        createdAt: new Date().toISOString()
+      };
+
+      await addRecord("media", {
+        type: "post",
+        ...post
+      });
+
+      loadMediaUI();
+
+    }
+
+
+    // -----------------------------
+    // LOAD MEDIA
+    // -----------------------------
+    async function loadMediaUI() {
+
+      const data = await getAllRecords("media");
+
+      const announcements = data.filter(d => d.type === "announcement");
+      const posts = data.filter(d => d.type === "post");
+
+      const aContainer = document.getElementById("announcementContainer");
+      const pContainer = document.getElementById("postContainer");
+
+      aContainer.innerHTML = "";
+      pContainer.innerHTML = "";
+
+
+      // Render announcements
+      announcements.forEach(a => {
+
+        const div = document.createElement("div");
+
+        div.innerHTML = `
+          <p>${a.text}</p>
+          <small>${new Date(a.createdAt).toLocaleString()}</small>
+        `;
+
+        aContainer.appendChild(div);
+
+      });
+
+
+      // Render posts
+      posts.forEach(p => {
+
+        const div = document.createElement("div");
+
+        div.innerHTML = `
+
+          <h3>${p.title}</h3>
+
+          ${p.imageUrl ? `<img src="${p.imageUrl}" width="200">` : ""}
+
+          <p>${p.content}</p>
+
+          <small>${new Date(p.createdAt).toLocaleString()}</small>
+
+        `;
+
+        pContainer.appendChild(div);
+
+      });
+
+    }
+
+
+    // -----------------------------
+    // INIT
+    // -----------------------------
+    document.addEventListener("DOMContentLoaded", async () => {
+
+      await initDB();
+
+      loadMediaUI();
+
+    });
+
+  </script>
+
+</body>
+
+  </html>
